@@ -1,0 +1,380 @@
+1. Start from first principle: what is a dependency?
+    A dependency is something a class needs to do its work.
+    Example:
+    class Dev {
+        Laptop laptop;
+
+        public void build() {
+            laptop.compile();
+        }
+    }
+    Here Dev needs Laptop.
+    So: Laptop is a dependency of Dev
+
+    In real projects:
+    Controller depends on Service
+    Service depends on Repository
+    Repository depends on Database connection
+
+    Example:
+    UserController → UserService → UserRepository → Database
+
+2. Problem without Dependency Injection
+    Suppose you write:
+    class Dev {
+        private Laptop laptop = new Laptop();
+
+        public void build() {
+            laptop.compile();
+        }
+    }
+
+    This works. But there is a hidden problem: Dev is creating Laptop itself
+
+    So Dev is responsible for two things:
+        1. Developer work
+        2. Creating Laptop object
+
+    That creates tight coupling.
+    What is tight coupling? : Tight coupling means one class is strongly dependent on another concrete class.
+
+    private Laptop laptop = new Laptop();
+
+    Now Dev is fixed to Laptop.
+    If tomorrow you want to use Desktop instead of Laptop, you must change the Dev class.
+
+    Example:
+    class Dev {
+        private Desktop desktop = new Desktop();
+    }
+    That is not flexible.
+
+3. First principle design idea
+    A class should focus on its own job.
+    Dev should only know: I need a Computer to compile code
+
+    It should not care:
+    How to create Laptop?
+    How to create Desktop?
+    Which object should be used?
+
+    So instead of this:
+    class Dev {
+        private Laptop laptop = new Laptop();
+    }
+
+    We want this:
+    class Dev {
+        private Computer computer;
+
+        public Dev(Computer computer) {
+            this.computer = computer;
+        }
+    }
+    Now Dev depends on abstraction/interface.
+4. Example with interface
+    interface Computer {
+        void compile();
+    }
+    class Laptop implements Computer {
+        public void compile() {
+            System.out.println("Laptop compiling");
+        }
+    }
+    class Desktop implements Computer {
+        public void compile() {
+            System.out.println("Desktop compiling");
+        }
+    }
+    Now Dev becomes:
+    class Dev {
+        private Computer computer;
+
+        public Dev(Computer computer) {
+            this.computer = computer;
+        }
+
+        public void build() {
+            computer.compile();
+            System.out.println("Dev built project");
+        }
+    }
+
+    Now Dev does not know whether it gets Laptop or Desktop.
+    It only knows: I need something that behaves like Computer
+    This is better design.
+
+5. But who creates the object now?
+    If Dev does not create Laptop, someone else must create it.
+    Without Spring:
+    public class Main {
+        public static void main(String[] args) {
+            Computer computer = new Laptop();
+            Dev dev = new Dev(computer);
+
+            dev.build();
+        }
+    }
+
+    Here Main creates dependencies and passes them.
+    This is Dependency Injection.
+
+6. What is Dependency Injection?
+    Dependency Injection means:
+    Instead of a class creating its dependencies, dependencies are given/injected from outside.
+    Without DI:
+    class Dev {
+        Laptop laptop = new Laptop();
+    }
+
+    With DI:
+    class Dev {
+        Laptop laptop;
+
+        Dev(Laptop laptop) {
+            this.laptop = laptop;
+        }
+    }
+    So: Dependency Injection = giving required objects from outside
+
+7. Why is it called injection?
+    Because the dependency is inserted into the class.
+    There are mainly 3 ways:
+    1. Constructor injection
+    2. Setter injection
+    3. Field injection
+    8. Constructor Injection
+    class Dev {
+        private final Laptop laptop;
+
+        public Dev(Laptop laptop) {
+            this.laptop = laptop;
+        }
+    }
+    Dependency comes through constructor.
+    This is the best and most recommended way.
+    Why?
+    Object cannot exist without required dependency
+    Dependency can be final
+    Easy to test
+    Clear design
+
+9. Setter Injection
+class Dev {
+    private Laptop laptop;
+
+    public void setLaptop(Laptop laptop) {
+        this.laptop = laptop;
+    }
+}
+Dependency comes through setter method.
+Useful when dependency is optional.
+
+10. Field Injection
+class Dev {
+    @Autowired
+    private Laptop laptop;
+}
+Spring directly injects into field.
+This works, but not preferred in real projects because:
+Harder to test, Dependency is hidden, Cannot make field final
+
+For learning, it is okay.
+For real projects, prefer constructor injection.
+
+11. Now what is IoC?
+    IoC means: Inversion of Control
+    In simple words:
+    You give control of object creation and dependency management to someone else.
+    Normally, you control object creation:
+
+    Laptop laptop = new Laptop();
+    Dev dev = new Dev(laptop);
+
+    With Spring:
+    @Component
+    class Laptop {
+    }
+    @Component
+    class Dev {
+        private final Laptop laptop;
+        public Dev(Laptop laptop) {
+            this.laptop = laptop;
+        }
+    }
+
+    You do not write:
+    new Laptop()
+    new Dev()
+
+    Spring creates objects and connects them.
+    So control is inverted.
+
+12. Why “inversion”?
+    Because the responsibility changes direction.
+    Without Spring
+    Your code controls object creation:
+    Your code → creates objects
+    Your code → connects dependencies
+    Your code → manages lifecycle
+    With Spring
+    Spring controls object creation:
+    Spring → creates objects
+    Spring → connects dependencies
+    Spring → manages lifecycle
+    Your code → only declares what it needs
+    That is why it is called Inversion of Control.
+
+13. Relationship between IoC and DI
+    They are related but not exactly same.
+    IoC = big principle
+    DI = one technique to achieve IoC / implementation of IoC
+    Meaning:
+    IoC says: give control to framework/container
+    DI says: dependencies should be provided from outside
+    Spring uses DI to implement IoC.
+
+14. What is IoC container?
+    Spring IoC container is the part of Spring that:
+    Creates beans, Stores beans, Injects dependencies, Manages lifecycle
+    Think of it like a factory + storage + manager.
+
+    Example:
+    Spring IoC Container
+    --------------------
+    Laptop bean
+    Dev bean
+    UserService bean
+    UserRepository bean
+    When Dev needs Laptop, Spring gives it.
+
+15. What is a bean?
+    A bean is: An object managed by Spring IoC container
+
+    Example:
+    @Component
+    class Laptop {
+    }
+    Spring creates object of Laptop.
+    That object is called:
+    Laptop bean
+
+16. Full Spring example
+    Laptop.java
+    package com.sulabh.demo2;
+
+    import org.springframework.stereotype.Component;
+
+    @Component
+    public class Laptop {
+        public void compile() {
+            System.out.println("Laptop compiling");
+        }
+    }
+    Dev.java
+    package com.sulabh.demo2;
+
+    import org.springframework.stereotype.Component;
+
+    @Component
+    public class Dev {
+
+        private final Laptop laptop;
+
+        public Dev(Laptop laptop) {
+            this.laptop = laptop;
+        }
+
+        public void build() {
+            laptop.compile();
+            System.out.println("Dev built project");
+        }
+    }
+    Main application
+    package com.sulabh.demo2;
+
+    import org.springframework.boot.SpringApplication;
+    import org.springframework.boot.autoconfigure.SpringBootApplication;
+    import org.springframework.context.ApplicationContext;
+
+    @SpringBootApplication
+    public class Demo2Application {
+        public static void main(String[] args) {
+            ApplicationContext context =
+                    SpringApplication.run(Demo2Application.class, args);
+
+            Dev dev = context.getBean(Dev.class);
+            dev.build();
+        }
+    }
+17. What happens internally?
+
+    When you run:
+    SpringApplication.run(Demo2Application.class, args);
+    Spring starts.
+
+    Then:
+
+    1. Spring scans package com.sulabh.demo2
+    2. Finds @Component on Laptop
+    3. Creates Laptop object
+    4. Stores it as Laptop bean
+    5. Finds @Component on Dev
+    6. Sees Dev constructor needs Laptop
+    7. Finds Laptop bean
+    8. Passes Laptop bean into Dev constructor
+    9. Stores Dev as bean
+    10. You ask context.getBean(Dev.class)
+    11. Spring returns already created Dev bean
+
+18. Same thing without Spring
+    public class Main {
+        public static void main(String[] args) {
+            Laptop laptop = new Laptop();
+            Dev dev = new Dev(laptop);
+            dev.build();
+        }
+    }
+
+    Here you are the container.
+
+    You create and connect objects manually.
+
+    Spring just automates this process.
+
+19. Why is DI useful?
+    1. Loose coupling
+        Instead of:
+        private Laptop laptop = new Laptop();
+
+        Use:
+        private Computer computer;
+
+        Now you can pass Laptop or Desktop.
+    2. Easy testing
+        Suppose you want to test Dev.
+
+        You can pass fake computer:
+
+        class FakeComputer implements Computer {
+            public void compile() {
+                System.out.println("Fake compile");
+            }
+        }
+
+        Test:
+        Dev dev = new Dev(new FakeComputer());
+        dev.build();
+
+        No need real Laptop class.
+    3. Easy replacement
+
+        Today:
+        Computer computer = new Laptop();
+        Tomorrow:
+        Computer computer = new Desktop();
+        No change in Dev.
+
+    4. Cleaner code
+        Classes only declare dependencies.
+        They do not manage object creation.
